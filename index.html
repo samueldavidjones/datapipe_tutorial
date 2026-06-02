@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1024">
+<title>Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#faf7f1;
+    --ink:#1a1612;
+    --ink-soft:#5a544c;
+    --rule:#d8d2c4;
+    --accent:#0a6e6a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.6}
+  .frame{max-width:720px;margin:0 auto;padding:56px 36px 96px}
+  .screen{display:none;animation:fade .3s ease}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+
+  h1{font-family:'Fraunces',serif;font-weight:700;font-size:40px;line-height:1.1;letter-spacing:-.015em;margin:0 0 24px;color:var(--ink)}
+  h2{font-weight:600;font-size:17px;margin:28px 0 10px;color:var(--ink)}
+  p{margin:0 0 14px;max-width:64ch;color:var(--ink)}
+  .small{font-size:13px;color:var(--ink-soft)}
+
+  label{display:block;font-size:14px;font-weight:500;color:var(--ink-soft);margin:18px 0 6px}
+  input[type=text],select,textarea{
+    width:100%;font-family:inherit;font-size:16px;
+    background:#fff;border:1px solid #c8c1b1;border-radius:4px;
+    padding:10px 13px;color:var(--ink);outline:none;
+    transition:border-color .15s ease;
+  }
+  input[type=text]:focus,select:focus,textarea:focus{border-color:var(--accent)}
+  .check{display:flex;align-items:flex-start;gap:11px;margin:10px 0;cursor:pointer;padding:4px 0}
+  .check input{width:17px;height:17px;margin-top:3px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+  .check span{flex:1;font-size:15px}
+
+  button.primary{
+    font-family:inherit;font-size:15px;font-weight:600;
+    background:var(--ink);color:var(--paper);border:0;border-radius:4px;
+    padding:12px 22px;cursor:pointer;margin-top:24px;
+    transition:background .15s ease;
+  }
+  button.primary:hover{background:#000}
+  button.primary:disabled{opacity:.4;cursor:not-allowed}
+
+  .err{color:#b8331a;font-size:14px;min-height:20px;margin-top:6px}
+  .rule{height:1px;background:var(--rule);margin:32px 0;border:0}
+
+  .legend{display:flex;gap:24px;margin:18px 0;flex-wrap:wrap;font-size:14px}
+  .legend-item{display:flex;align-items:center;gap:9px}
+  .legend-icon{width:22px;height:22px;display:grid;place-items:center;border-radius:50%;font-size:13px;color:#fff;font-weight:700}
+  .li-gem{background:var(--accent)}
+  .li-coin{background:#b88a2a}
+  .li-bomb{background:#a83a1a}
+
+  /* Game */
+  #game-stage{
+    background:#0e1a1a;border:1px solid var(--ink);border-radius:6px;
+    width:720px;height:460px;margin:16px 0;position:relative;overflow:hidden;
+  }
+  #game-canvas{display:block;width:100%;height:100%}
+  .hud{
+    position:absolute;top:0;left:0;right:0;padding:12px 18px;
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:'JetBrains Mono',monospace;color:#f3ede0;
+    pointer-events:none;
+  }
+  .hud .score{font-size:26px;font-weight:700;color:#f3ede0}
+  .hud .label{font-size:10px;letter-spacing:.15em;text-transform:uppercase;opacity:.6;margin-bottom:2px}
+  .hud .time{font-size:26px;font-weight:700}
+  .hud .round{font-size:12px;font-weight:700}
+  .overlay{
+    position:absolute;inset:0;background:rgba(14,26,26,.95);
+    display:grid;place-items:center;color:#f3ede0;text-align:center;padding:40px;
+  }
+  .overlay h2{font-family:'Fraunces',serif;font-weight:700;color:#f3ede0;font-size:34px;margin:0 0 10px}
+  .overlay p{color:#bdb6a4;margin:0 0 20px;max-width:440px}
+  .overlay .big-number{font-family:'JetBrains Mono',monospace;font-size:60px;color:#f3ede0;font-weight:700;margin:14px 0;line-height:1}
+  .overlay button{
+    font-family:inherit;font-size:15px;font-weight:600;
+    background:var(--paper);color:#0e1a1a;border:0;border-radius:4px;
+    padding:12px 22px;cursor:pointer;
+  }
+  .overlay button:hover{background:#fff}
+
+  /* CRT */
+  .crt-q{padding:22px 0;border-top:1px solid var(--rule)}
+  .crt-q:first-of-type{border-top:0;padding-top:8px}
+  .crt-q .qtxt{font-size:16px;line-height:1.55;margin-bottom:12px;color:var(--ink)}
+  .crt-q input{max-width:200px}
+
+  /* Debrief */
+  .code-box{
+    background:#fff;color:var(--ink);padding:20px 24px;margin:14px 0;
+    font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;letter-spacing:.12em;
+    text-align:center;border:1px solid #c8c1b1;border-radius:4px;
+    user-select:all;
+  }
+  .copy-btn{
+    font-family:inherit;font-size:13px;font-weight:500;
+    background:transparent;border:1px solid #c8c1b1;color:var(--ink-soft);
+    padding:8px 14px;cursor:pointer;border-radius:4px;
+  }
+  .copy-btn:hover{border-color:var(--ink);color:var(--ink)}
+
+  .status-banner{
+    margin:18px 0;padding:12px 16px;font-size:14px;
+    background:#fff;border:1px solid var(--rule);border-radius:4px;color:var(--ink-soft);
+  }
+  .status-banner.ok{border-color:var(--accent);color:var(--accent)}
+  .status-banner.fail{border-color:#b8331a;color:#b8331a}
+</style>
+</head>
+<body>
+<div class="frame">
+
+<!-- ============ SCREEN 1: CONSENT ============ -->
+<section class="screen active" id="scr-consent">
+  <h1>Welcome</h1>
+
+  <h2>About this study</h2>
+  <p>This is a short study with two parts. You will play a brief reaction-time game for about thirty seconds, then answer three short reasoning questions. The full session takes under five minutes.</p>
+
+  <h2>Data and privacy</h2>
+  <p>We collect your Prolific ID, your in-game actions, your reasoning-question answers, and timing information. Data are stored on the Open Science Framework (Germany region). Your data are not sold or shared with third parties.</p>
+
+  <h2>Your rights</h2>
+  <p>Participation is voluntary. You may close the tab at any point with no consequence. To withdraw your data after the session, email the researcher with your Prolific ID.</p>
+
+  <hr class="rule">
+
+  <label for="inp-pid">Prolific ID</label>
+  <input type="text" id="inp-pid" placeholder="paste your Prolific ID">
+
+  <label class="check"><input type="checkbox" id="c1"><span>I have read the information above and understand what participation involves.</span></label>
+  <label class="check"><input type="checkbox" id="c2"><span>I understand my participation is voluntary and I can withdraw at any time.</span></label>
+  <label class="check"><input type="checkbox" id="c3"><span>I consent to my data being stored on OSF for research purposes.</span></label>
+
+  <p class="err" id="consent-err"></p>
+  <button class="primary" onclick="submitConsent()">I consent — continue</button>
+</section>
+
+<!-- ============ SCREEN 2: GAME ============ -->
+<section class="screen" id="scr-game">
+  <h1>The task</h1>
+  <p>Catch what's worth catching. Avoid what isn't. You have thirty seconds.</p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-icon li-gem">◆</div><span>Gem &nbsp;+10</span></div>
+    <div class="legend-item"><div class="legend-icon li-coin">●</div><span>Coin &nbsp;+3</span></div>
+    <div class="legend-item"><div class="legend-icon li-bomb">✕</div><span>Bomb &nbsp;−15</span></div>
+  </div>
+
+  <p><strong>Controls:</strong> ← → arrow keys (or A / D) to move the basket.</p>
+
+  <div id="game-stage">
+    <canvas id="game-canvas" width="720" height="460"></canvas>
+    <div class="hud">
+      <div><div class="label">Score</div><div class="score" id="hud-score">0</div></div>
+      <div style="text-align:right"><div class="label">Time</div><div class="time" id="hud-time">30</div></div>
+    </div>
+    <div class="overlay" id="game-overlay">
+      <h2 id="ov-title">Ready?</h2>
+      <p id="ov-msg">Use the arrow keys to move. Catch gems and coins. Avoid bombs.</p>
+      <div class="big-number" id="ov-bignum" style="display:none"></div>
+      <button id="ov-btn" onclick="overlayAction()">Start</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCREEN 3: CRT ============ -->
+<section class="screen" id="scr-crt">
+  <h1>A few questions</h1>
+  <p>Each has a single best numerical answer. Take your time.</p>
+
+  <div class="crt-q">
+    <div class="qtxt"><strong>1.</strong> A bat and a ball cost <strong>£1.10</strong> in total. The bat costs <strong>£1.00 more</strong> than the ball. How much does the ball cost, <em>in pence</em>?</div>
+    <label>Your answer (pence)</label>
+    <input type="text" id="crt1" inputmode="decimal" placeholder="number only">
+  </div>
+
+  <div class="crt-q">
+    <div class="qtxt"><strong>2.</strong> If it takes <strong>5 machines 5 minutes</strong> to make 5 widgets, how long would it take <strong>100 machines</strong> to make 100 widgets, <em>in minutes</em>?</div>
+    <label>Your answer (minutes)</label>
+    <input type="text" id="crt2" inputmode="decimal" placeholder="number only">
+  </div>
+
+  <div class="crt-q">
+    <div class="qtxt"><strong>3.</strong> In a lake, there is a patch of lily pads. Every day, the patch <strong>doubles in size</strong>. If it takes <strong>48 days</strong> for the patch to cover the entire lake, how long would it take to cover <strong>half</strong> the lake, <em>in days</em>?</div>
+    <label>Your answer (days)</label>
+    <input type="text" id="crt3" inputmode="decimal" placeholder="number only">
+  </div>
+
+  <p class="err" id="crt-err"></p>
+  <button class="primary" onclick="submitCRT()">Finish and submit</button>
+</section>
+
+<!-- ============ SCREEN 4: DEBRIEF ============ -->
+<section class="screen" id="scr-debrief">
+  <h1>Thank you</h1>
+  <p>You finished with a score of <strong id="db-score">—</strong> points.</p>
+
+  <div class="status-banner" id="upload-status">Uploading your data…</div>
+
+  <h2>About this study</h2>
+  <p>This study looks at whether performance on the catching game relates to scores on a short reasoning task. We recorded which falling objects you caught and missed during the game, along with your answers to the three questions that followed.</p>
+
+  <h2>About the reasoning questions</h2>
+  <p>The three questions are the Cognitive Reflection Test (Frederick, 2005). Each has an intuitively appealing but incorrect answer. For reference: the ball costs <strong>5p</strong>, not 10p; the machines take <strong>5 minutes</strong>, not 100; the lily pads cover half the lake on day <strong>47</strong>, not day 24.</p>
+
+  <h2>Your completion code</h2>
+  <div class="code-box" id="completion-code">C7K9-X2M4-DEMO</div>
+  <button class="copy-btn" onclick="copyCode()">Copy code</button>
+
+  <p style="margin-top:24px">Please paste this code into Prolific to confirm completion.</p>
+</section>
+
+</div>
+
+<script>
+/* ============ CONFIG ============ */
+const DATAPIPE_EXPERIMENT_ID = "REPLACE_WITH_YOUR_DATAPIPE_ID";  // ← paste from DataPipe dashboard
+
+/* ============ STATE ============ */
+const STATE = {
+  pid:"",
+  sessionStart:new Date().toISOString(),
+  consentTime:null,
+  consents:{c1:false,c2:false,c3:false},
+  gameEvents:[],
+  score:0,
+  gameStarted:false,
+  gameFinished:false,
+  crt:{q1:null,q2:null,q3:null,rt1:null,rt2:null,rt3:null,start:null,end:null},
+};
+
+/* ============ SCREEN NAV ============ */
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
+
+/* ============ CONSENT ============ */
+function submitConsent(){
+  const pid=document.getElementById('inp-pid').value.trim();
+  const c1=document.getElementById('c1').checked;
+  const c2=document.getElementById('c2').checked;
+  const c3=document.getElementById('c3').checked;
+  const err=document.getElementById('consent-err');
+  if(!pid){err.textContent='Please enter a Prolific ID (or type TEST).';return;}
+  if(!(c1&&c2&&c3)){err.textContent='Please tick all three consent boxes to continue.';return;}
+  err.textContent='';
+  STATE.pid=pid;
+  STATE.consents={c1,c2,c3};
+  STATE.consentTime=new Date().toISOString();
+  show('scr-game');
+  setTimeout(initGame,300);
+}
+
+/* ============ GAME ============ */
+const canvas=document.getElementById('game-canvas');
+const ctx=canvas.getContext('2d');
+const W=720, H=460;
+const ROUND_SECONDS=30;
+
+const player={x:W/2, w:90, h:18, speed:7};
+const keys={left:false,right:false};
+let objects=[];
+let lastSpawn=0;
+let roundStart=0, roundEnd=0, roundRunning=false;
+let frameId=null;
+
+const TYPES={
+  gem:  {value:10, color:'#5eebc4', size:14, weight:1, shape:'diamond'},
+  coin: {value:3,  color:'#e2a73a', size:16, weight:3, shape:'circle'},
+  bomb: {value:-15,color:'#d94a1f', size:18, weight:2, shape:'x'},
+};
+
+function initGame(){
+  STATE.score=0;
+  STATE.gameStarted=false;
+  STATE.gameFinished=false;
+  STATE.gameEvents=[];
+  document.getElementById('hud-score').textContent='0';
+  document.getElementById('hud-time').textContent='30';
+  showOverlay('Ready?','Use the arrow keys (or A/D) to move. Catch gems and coins. Avoid bombs.','Start');
+  drawIdle();
+}
+
+function showOverlay(title,msg,btn,big){
+  document.getElementById('ov-title').textContent=title;
+  document.getElementById('ov-msg').textContent=msg;
+  document.getElementById('ov-btn').textContent=btn;
+  const bn=document.getElementById('ov-bignum');
+  if(big!==undefined){bn.style.display='block';bn.textContent=big;}else{bn.style.display='none';}
+  document.getElementById('game-overlay').style.display='grid';
+}
+function hideOverlay(){document.getElementById('game-overlay').style.display='none';}
+
+function overlayAction(){
+  if(!STATE.gameStarted){startGame();}
+  else if(STATE.gameFinished){show('scr-crt');STATE.crt.start=performance.now();}
+}
+
+function startGame(){
+  STATE.gameStarted=true;
+  document.getElementById('hud-score').textContent='0';
+  objects=[];
+  player.x=W/2;
+  roundStart=performance.now();
+  roundEnd=roundStart+ROUND_SECONDS*1000;
+  roundRunning=true;
+  hideOverlay();
+  lastSpawn=0;
+  if(frameId)cancelAnimationFrame(frameId);
+  loop();
+}
+
+function endRound(){
+  roundRunning=false;
+  STATE.gameFinished=true;
+  if(frameId)cancelAnimationFrame(frameId);
+  showOverlay('Time up','Your final score.','Continue →',STATE.score+' pts');
+}
+
+function loop(){
+  const now=performance.now();
+  const remaining=Math.max(0,(roundEnd-now)/1000);
+  document.getElementById('hud-time').textContent=Math.ceil(remaining);
+  if(now>=roundEnd){endRound();return;}
+
+  // move player
+  if(keys.left) player.x-=player.speed;
+  if(keys.right) player.x+=player.speed;
+  player.x=Math.max(player.w/2,Math.min(W-player.w/2,player.x));
+
+  // spawn
+  const elapsed=now-roundStart;
+  const spawnInterval=Math.max(380, 700 - elapsed/100); // gets faster
+  if(now-lastSpawn>spawnInterval){
+    spawnObject(now);
+    lastSpawn=now;
+  }
+
+  // update objects
+  const basketY=H-40, basketTop=basketY-9, basketBot=basketY+9;
+  for(let i=objects.length-1;i>=0;i--){
+    const o=objects[i];
+    o.y+=o.vy;
+    // catch?
+    if(o.y>=basketTop && o.y<=basketBot && Math.abs(o.x-player.x)<player.w/2){
+      registerCatch(o,now);
+      objects.splice(i,1);
+      continue;
+    }
+    if(o.y>H+30){
+      registerMiss(o,now);
+      objects.splice(i,1);
+    }
+  }
+
+  draw();
+  frameId=requestAnimationFrame(loop);
+}
+
+function spawnObject(now){
+  const r=Math.random();
+  let type;
+  if(r<0.18) type='gem';
+  else if(r<0.65) type='coin';
+  else type='bomb';
+  const T=TYPES[type];
+  const o={type,x:30+Math.random()*(W-60),y:-20,vy:2.5+Math.random()*2.2,spawnTime:now,...T};
+  objects.push(o);
+  STATE.gameEvents.push({
+    event:'spawn',type,
+    x:Math.round(o.x),vy:+o.vy.toFixed(2),
+    t_ms:Math.round(now-roundStart),
+  });
+}
+
+function registerCatch(o,now){
+  STATE.score+=o.value;
+  document.getElementById('hud-score').textContent=String(STATE.score);
+  STATE.gameEvents.push({
+    event:'catch',type:o.type,points:o.value,
+    x:Math.round(o.x),player_x:Math.round(player.x),
+    t_ms:Math.round(now-roundStart),
+    flight_ms:Math.round(now-o.spawnTime),
+  });
+  flashes.push({x:o.x,y:o.y,text:(o.value>0?'+':'')+o.value,color:o.color,life:30});
+}
+
+function registerMiss(o,now){
+  STATE.gameEvents.push({
+    event:'miss',type:o.type,
+    x:Math.round(o.x),player_x:Math.round(player.x),
+    t_ms:Math.round(now-roundStart),
+  });
+}
+
+let flashes=[];
+
+function draw(){
+  ctx.fillStyle='#0e1a1a';
+  ctx.fillRect(0,0,W,H);
+  // subtle grid
+  ctx.strokeStyle='rgba(243,237,224,0.04)';
+  ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // objects
+  for(const o of objects) drawShape(o);
+
+  // basket
+  const bx=player.x, by=H-40;
+  ctx.fillStyle='#f3ede0';
+  ctx.fillRect(bx-player.w/2,by-player.h/2,player.w,player.h);
+  ctx.fillStyle='#d94a1f';
+  ctx.fillRect(bx-player.w/2,by-player.h/2,player.w,4);
+
+  // flashes
+  for(let i=flashes.length-1;i>=0;i--){
+    const f=flashes[i];
+    ctx.globalAlpha=f.life/30;
+    ctx.fillStyle=f.color;
+    ctx.font='700 22px JetBrains Mono, monospace';
+    ctx.fillText(f.text,f.x-14,f.y-10-(30-f.life));
+    ctx.globalAlpha=1;
+    f.life--;
+    if(f.life<=0) flashes.splice(i,1);
+  }
+}
+
+function drawShape(o){
+  ctx.fillStyle=o.color;
+  ctx.strokeStyle='#0e1a1a';
+  ctx.lineWidth=2;
+  if(o.shape==='diamond'){
+    ctx.beginPath();
+    ctx.moveTo(o.x,o.y-o.size);ctx.lineTo(o.x+o.size,o.y);
+    ctx.lineTo(o.x,o.y+o.size);ctx.lineTo(o.x-o.size,o.y);
+    ctx.closePath();ctx.fill();ctx.stroke();
+  } else if(o.shape==='circle'){
+    ctx.beginPath();ctx.arc(o.x,o.y,o.size,0,Math.PI*2);ctx.fill();ctx.stroke();
+  } else {
+    ctx.beginPath();ctx.arc(o.x,o.y,o.size,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.strokeStyle='#0e1a1a';ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(o.x-o.size/2,o.y-o.size/2);ctx.lineTo(o.x+o.size/2,o.y+o.size/2);
+    ctx.moveTo(o.x+o.size/2,o.y-o.size/2);ctx.lineTo(o.x-o.size/2,o.y+o.size/2);
+    ctx.stroke();
+  }
+}
+
+function drawIdle(){
+  ctx.fillStyle='#0e1a1a';
+  ctx.fillRect(0,0,W,H);
+}
+
+// keyboard
+window.addEventListener('keydown',e=>{
+  if(!roundRunning) return;
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') keys.left=true;
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.right=true;
+});
+window.addEventListener('keyup',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') keys.left=false;
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.right=false;
+});
+
+/* ============ CRT ============ */
+function submitCRT(){
+  const a1=document.getElementById('crt1').value.trim();
+  const a2=document.getElementById('crt2').value.trim();
+  const a3=document.getElementById('crt3').value.trim();
+  const err=document.getElementById('crt-err');
+  if(!a1||!a2||!a3){err.textContent='Please answer all three questions.';return;}
+  err.textContent='';
+  STATE.crt.q1=a1; STATE.crt.q2=a2; STATE.crt.q3=a3;
+  STATE.crt.end=performance.now();
+  document.getElementById('db-score').textContent=STATE.score;
+  show('scr-debrief');
+  uploadData();
+}
+
+function classifyCRT(answer,correct,intuitive){
+  const n=parseFloat(String(answer).replace(',','.'));
+  if(isNaN(n)) return 'other';
+  if(Math.abs(n-correct)<0.001) return 'correct';
+  if(Math.abs(n-intuitive)<0.001) return 'intuitive';
+  return 'other';
+}
+
+/* ============ DATA UPLOAD ============ */
+function buildCSV(){
+  const c1=classifyCRT(STATE.crt.q1,5,10);
+  const c2=classifyCRT(STATE.crt.q2,5,100);
+  const c3=classifyCRT(STATE.crt.q3,47,24);
+  const crtScore=[c1,c2,c3].filter(x=>x==='correct').length;
+
+  const cols=['prolific_id','session_start','consent_time','consent_c1','consent_c2','consent_c3',
+    'game_score',
+    'crt_q1_answer','crt_q1_class','crt_q2_answer','crt_q2_class','crt_q3_answer','crt_q3_class','crt_score',
+    'event','event_type','event_x','event_player_x','event_t_ms','event_flight_ms','event_vy'];
+  const rows=[cols.join(',')];
+
+  // summary row
+  rows.push([
+    csvSafe(STATE.pid), STATE.sessionStart, STATE.consentTime,
+    STATE.consents.c1, STATE.consents.c2, STATE.consents.c3,
+    STATE.score,
+    csvSafe(STATE.crt.q1), c1, csvSafe(STATE.crt.q2), c2, csvSafe(STATE.crt.q3), c3, crtScore,
+    'summary','','','','','',''
+  ].join(','));
+
+  // one row per game event
+  for(const e of STATE.gameEvents){
+    rows.push([
+      csvSafe(STATE.pid), STATE.sessionStart, STATE.consentTime,
+      STATE.consents.c1, STATE.consents.c2, STATE.consents.c3,
+      STATE.score,
+      csvSafe(STATE.crt.q1), c1, csvSafe(STATE.crt.q2), c2, csvSafe(STATE.crt.q3), c3, crtScore,
+      e.event, e.type, e.x??'', e.player_x??'', e.t_ms??'', e.flight_ms??'', e.vy??''
+    ].join(','));
+  }
+  return rows.join('\n');
+}
+function csvSafe(s){if(s===null||s===undefined) return '';const v=String(s);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+
+function uploadData(){
+  const banner=document.getElementById('upload-status');
+  const csv=buildCSV();
+  const filename='study_'+STATE.pid+'_'+Date.now()+'.csv';
+
+  if(DATAPIPE_EXPERIMENT_ID==='REPLACE_WITH_YOUR_DATAPIPE_ID'){
+    banner.className='status-banner fail';
+    banner.textContent='⚠ DATAPIPE_EXPERIMENT_ID is not set in the HTML. Data not uploaded.';
+    return;
+  }
+
+  fetch("https://pipe.jspsych.org/api/data/",{
+    method:"POST",
+    headers:{"Content-Type":"application/json",Accept:"*/*"},
+    keepalive:true,
+    body:JSON.stringify({experimentID:DATAPIPE_EXPERIMENT_ID,filename:filename,data:csv})
+  }).then(r=>{
+    if(r.ok){banner.className='status-banner ok';banner.textContent='✓ Data uploaded successfully ('+filename+').';}
+    else {banner.className='status-banner fail';banner.textContent='⚠ Upload failed (status '+r.status+'). Please notify the researcher.';}
+  }).catch(()=>{
+    banner.className='status-banner fail';
+    banner.textContent='⚠ Network error during upload. Please notify the researcher.';
+  });
+}
+
+function copyCode(){
+  navigator.clipboard.writeText(document.getElementById('completion-code').textContent.trim());
+  event.target.textContent='Copied ✓';
+  setTimeout(()=>event.target.textContent='Copy code',1500);
+}
+</script>
+</body>
+</html>
